@@ -1,3 +1,4 @@
+from django.forms import ValidationError
 from django.shortcuts import render
 
 # Create your views here.
@@ -20,19 +21,26 @@ def transfer_money(request):
     account_id = request.data.get('account_id')
     amount = request.data.get('amount')
 
-    # We are using a raw Python f-string to build the SQL query.
-    # An attacker can manipulate the 'account_id' string to hijack the database.
-    query = f"UPDATE api_account SET balance = balance - {amount} WHERE id = '{account_id}'"
-
     try:
-        with connection.cursor() as cursor:
-            cursor.execute(query)
+        # The ORM automatically sanitizes the input, blocking SQLi
+        account = Account.objects.get(id=account_id)
+
+        # F() expression handles the math safely at the database level
+        account.balance = F('balance') - amount
+        account.save()
+
+        account.refresh_from_db()
 
         return Response({
             "status": "Success",
-            "message": f"Processed transfer of ${amount}",
-            "debug_query": query # Exposing this so we can see the hack in action later
+            "message": "Secure transfer processed.",
+            "new_balance": account.balance
         })
+
+    except Account.DoesNotExist:
+        return Response({"error": "Account not found."}, status=404)
+    except ValidationError:
+        return Response({"error": "Invalid Account ID format."}, status=403)
     except Exception as e:
         return Response({"error": str(e)}, status=400)
 
