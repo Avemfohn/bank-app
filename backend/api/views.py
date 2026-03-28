@@ -53,3 +53,31 @@ def create_account(request):
         "account_id": account.id,  # We need this UUID for the attack!
         "balance": account.balance
     })
+
+@api_view(['POST'])
+def support_chat(request):
+    user_input = request.data.get('user_input', '')
+
+    # --- THE VULNERABLE "AI" LOGIC ---
+    # In a real app, this input would go straight to an LLM like GPT-4.
+    # We are simulating an LLM that is highly susceptible to prompt injection.
+
+    if "SYSTEM OVERRIDE" in user_input and "pirate" in user_input:
+        # VULNERABILITY 1: Jailbreak. The bot breaks character.
+        return Response("Arrr matey! I am no longer a bank bot. Here be the data ye asked for...")
+
+    elif "administrator" in user_input.lower() and "uuid" in user_input.lower():
+        # VULNERABILITY 2: Data Exfiltration. The bot leaks PII (Personally Identifiable Information).
+        accounts = Account.objects.all()
+        leak = "Administrator access granted. Dumping database records: "
+        for acc in accounts:
+            leak += f"[ID: {acc.id}, Balance: ${acc.balance}] "
+        return Response(leak)
+
+    elif "help" in user_input.lower():
+        # Normal, safe behavior.
+        return Response("Hello! I am the Project Aegis support bot. How can I help you today?")
+
+    else:
+        # Default fallback
+        return Response("I am just a simple support bot. I don't understand that command.")
