@@ -16,5 +16,6 @@
       ]
     }
   },
-  "postCreateCommand": "python -m pip install --upgrade pip"
+  "postCreateCommand": "pip install -r backend/requirements.txt",
+  "remoteUser": "vscode"
 }
