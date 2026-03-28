@@ -53,3 +53,18 @@ def create_account(request):
         "account_id": account.id,  # We need this UUID for the attack!
         "balance": account.balance
     })
+
+@api_view(['POST'])
+def update_note(request):
+    account_id = request.data.get('account_id')
+    new_note = request.data.get('note')
+
+    try:
+        account = Account.objects.get(id=account_id)
+        # This is a safe update using Django's ORM, but the attacker can still manipulate the 'account_id' to target any account.
+        account.note = new_note
+        account.save()
+
+        return Response({"status": "Success", "message": "Note updated.", "note": account.note})
+    except Account.DoesNotExist:
+        return Response({"error": "Could not find the specified account."}, status=404)
